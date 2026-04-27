@@ -44,6 +44,7 @@ from jaxonnxruntime.onnx_ops import concat
 from jaxonnxruntime.onnx_ops import constant
 from jaxonnxruntime.onnx_ops import constantofshape
 from jaxonnxruntime.onnx_ops import conv
+from jaxonnxruntime.onnx_ops import convtranspose
 from jaxonnxruntime.onnx_ops import cos
 from jaxonnxruntime.onnx_ops import cosh
 from jaxonnxruntime.onnx_ops import dequantizelinear
@@ -91,11 +92,13 @@ from jaxonnxruntime.onnx_ops import reducemean
 from jaxonnxruntime.onnx_ops import reducesum
 from jaxonnxruntime.onnx_ops import relu
 from jaxonnxruntime.onnx_ops import reshape
+from jaxonnxruntime.onnx_ops import resize
 from jaxonnxruntime.onnx_ops import scatterelements
 from jaxonnxruntime.onnx_ops import scatternd
 from jaxonnxruntime.onnx_ops import selu
 from jaxonnxruntime.onnx_ops import shape
 from jaxonnxruntime.onnx_ops import sigmoid
+from jaxonnxruntime.onnx_ops import sign
 from jaxonnxruntime.onnx_ops import sin
 from jaxonnxruntime.onnx_ops import sinh
 from jaxonnxruntime.onnx_ops import slice
