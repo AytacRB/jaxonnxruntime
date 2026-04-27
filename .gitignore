@@ -15,3 +15,4 @@ build/
 docs/**/tmp
 .coverage
 coverage.xml
+*.Identifier
