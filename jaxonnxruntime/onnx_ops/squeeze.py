@@ -58,20 +58,18 @@ class Squeeze(handler.Handler):
     return onnx_squeeze
 
   @classmethod
-  def version_11(
-      cls, node: onnx_node.OnnxNode, inputs: Sequence[Any]
-  ) -> Callable[..., Any]:
-    """ONNX version_11 Squeeze op."""
-    cls._prepare(node, inputs, onnx_squeeze)
-    return onnx_squeeze
+  def version_11(cls, node, inputs):
+      axes = node.attrs.get("axes", None)
+      node.attrs_dict["axis"] = None if axes is None else tuple(int(a) for a in axes)
+      return onnx_squeeze
 
   @classmethod
-  def version_13(
-      cls, node: onnx_node.OnnxNode, inputs: Sequence[Any]
-  ) -> Callable[..., Any]:
-    """ONNX version_13 Squeeze op."""
-    cls._prepare(node, inputs, onnx_squeeze)
-    return onnx_squeeze
+  def version_13(cls, node, inputs):
+      if len(inputs) == 1:
+          node.attrs_dict["axis"] = None
+      else:
+          node.attrs_dict["axis"] = tuple(int(a) for a in inputs[1].tolist())
+      return onnx_squeeze
 
   @classmethod
   def version_24(

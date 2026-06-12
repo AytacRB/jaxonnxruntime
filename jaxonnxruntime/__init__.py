@@ -57,6 +57,7 @@ from jaxonnxruntime.onnx_ops import erf
 from jaxonnxruntime.onnx_ops import exp
 from jaxonnxruntime.onnx_ops import expand
 from jaxonnxruntime.onnx_ops import flatten
+from jaxonnxruntime.onnx_ops import floor
 from jaxonnxruntime.onnx_ops import gather
 from jaxonnxruntime.onnx_ops import gatherelements
 from jaxonnxruntime.onnx_ops import gemm

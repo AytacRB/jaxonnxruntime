@@ -40,6 +40,14 @@ class ArgMax(handler.Handler):
     )
 
   @classmethod
+  def version_11(
+      cls, node: onnx_node.OnnxNode, inputs: Sequence[Any]
+  ) -> Callable[..., Any]:
+    """ONNX version_11 ArgMax op."""
+    cls._prepare(node, inputs, onnx_argmax)
+    return onnx_argmax
+
+  @classmethod
   def version_13(
       cls, node: onnx_node.OnnxNode, inputs: Sequence[Any]
   ) -> Callable[..., Any]:
@@ -47,12 +55,12 @@ class ArgMax(handler.Handler):
     cls._prepare(node, inputs, onnx_argmax)
     return onnx_argmax
 
-
 @functools.partial(
     jax.jit, static_argnames=('axis', 'keepdims', 'select_last_index')
 )
 def onnx_argmax(data, *, axis, keepdims, select_last_index):
   """https://github.com/onnx/onnx/blob/v1.12.0/docs/Operators.md#ArgMax for more details."""
+  
   keepdims = False if keepdims == 0 else True
   if select_last_index == 0:
     return jnp.argmax(data, axis=axis, keepdims=keepdims)

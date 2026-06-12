@@ -19,7 +19,7 @@ from typing import Any
 import jax
 from jaxonnxruntime.core import handler
 from jaxonnxruntime.core import onnx_node
-
+import numpy as np
 
 @handler.register_op('Slice')
 class Slice(handler.Handler):
@@ -41,8 +41,9 @@ class Slice(handler.Handler):
   def _prepare_10(
       cls, node: onnx_node.OnnxNode, inputs: Sequence[Any], onnx_jax_impl: Any
   ):
-    node.attrs_dict['starts'] = tuple(inputs[1].tolist())
-    node.attrs_dict['ends'] = tuple(inputs[2].tolist())
+    
+    node.attrs_dict['starts'] = _to_static_tuple(inputs[1],node.name, "starts")
+    node.attrs_dict['ends'] = _to_static_tuple(inputs[2],node.name, "ends")
     if len(inputs) >= 4:
       node.attrs_dict['axes'] = tuple(inputs[3].tolist())
     else:
@@ -112,3 +113,69 @@ def onnx_slice(*input_args, starts, ends, axes, steps):
   for i, axis in enumerate(axes):
     sub_indx[axis] = slices[i]
   return x[tuple(sub_indx)]
+
+
+
+def _to_static_tuple(x,node_name, name: str):
+    # Normal eager JAX / numpy / Python array case.
+    if hasattr(x, "tolist") and not x.__class__.__name__.endswith("Tracer"):
+        try:
+            y = x.tolist()
+            if isinstance(y, (int, float)):
+                y = [y]
+            return tuple(int(v) for v in y)
+        except Exception:
+            pass
+
+    # numpy fallback
+    try:
+        y = np.asarray(x).tolist()
+        if isinstance(y, (int, float)):
+            y = [y]
+        return tuple(int(v) for v in y)
+    except Exception:
+        pass
+
+    # JAX device_get fallback.
+    try:
+        y = jax.device_get(x).tolist()
+        if isinstance(y, (int, float)):
+            y = [y]
+        return tuple(int(v) for v in y)
+    except Exception:
+        pass
+
+    # IBPTracer with degenerate bounds.
+    for attr in ("bounds", "val", "value"):
+        if hasattr(x, attr):
+            obj = getattr(x, attr)
+
+            if hasattr(obj, "concrete"):
+                lb, ub = obj.concrete
+                lb = jax.device_get(lb)
+                ub = jax.device_get(ub)
+
+                if bool(np.all(np.asarray(lb) == np.asarray(ub))):
+                    y = np.asarray(lb).tolist()
+                    if isinstance(y, (int, float)):
+                        y = [y]
+                    return tuple(int(v) for v in y)
+
+                raise ValueError(
+                    f"{node_name}: Dynamic Slice {name} has non-degenerate IBP bounds: "
+                    f"lb={lb}, ub={ub}"
+                )
+
+            try:
+                y = jax.device_get(obj).tolist()
+                if isinstance(y, (int, float)):
+                    y = [y]
+                return tuple(int(v) for v in y)
+            except Exception:
+                pass
+
+    raise TypeError(
+        f"Could not extract static Slice {name} from {type(x)}; "
+        f"repr={x!r}; shape={getattr(x, 'shape', None)}; "
+        f"dtype={getattr(x, 'dtype', None)}"
+    )

@@ -16,8 +16,10 @@
 from collections.abc import Callable, Sequence
 import functools
 from typing import Any
+import operator
 
 import jax
+from jax import lax
 from jax import numpy as jnp
 from jaxonnxruntime.core import handler
 from jaxonnxruntime.core import onnx_node
@@ -75,7 +77,36 @@ class Pow(handler.Handler):
     return onnx_pow
 
 
+def _maybe_integer_exponent(b):
+  try:
+    if getattr(b, "size", None) == 1:
+      b = b.item()
+  except Exception:
+    pass
+
+  if isinstance(b, int):
+    return b
+
+  if isinstance(b, float) and b.is_integer():
+    return int(b)
+
+  return None
+
+
+@functools.partial(jax.jit, static_argnames=("y",))
+def _onnx_integer_pow(a, *, y: int):
+  return lax.integer_pow(a, y).astype(a.dtype)
+
+
 @functools.partial(jax.jit, static_argnames=())
-def onnx_pow(a, b):
-  """The impl for https://github.com/onnx/onnx/blob/v1.12.0/docs/Operators.md#Pow."""
+def _onnx_pow(a, b):
   return jnp.power(a, b).astype(a.dtype)
+
+
+def onnx_pow(a, b):
+  y = _maybe_integer_exponent(b)
+
+  if y is not None:
+    return _onnx_integer_pow(a, y=y)
+
+  return _onnx_pow(a, b)
